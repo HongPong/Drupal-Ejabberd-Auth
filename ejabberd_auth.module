@@ -3,26 +3,39 @@
 //[FIXME] creation du script d'auth sans forcement passer par la page d'admin
 
 /**
- * Implemenation of hook_perm().
+ * Implemenation of hook_permission().
  * [TODO] Maybe hard to implement
  */
-function ejabberd_auth_perm() {
-  return array('ejabberd_auth');
+function ejabberd_auth_permission() {
+  return array(
+    'ejabberd_auth' => array(
+      'title' => t('ejabberd_auth'),
+      'description' => t('TODO Add a description for \'ejabberd_auth\''),
+    ),
+  );
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function ejabberd_auth_menu() {
-  $items['admin/settings/ejabberd_auth'] = array(
+  $items['admin/config/ejabberd_auth'] = array(
     'description' => 'Ejabberd auth with drupal users',
     'title' => 'Ejabberd authentification',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ejabberd_auth_admin_settings'),
     'access arguments' => array('administer site configuration'),
     'type' => MENU_NORMAL_ITEM,
-    );
+  );
   return $items;
 }
 
-function ejabberd_auth_admin_settings() {
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function ejabberd_auth_admin_settings($form, &$form_state) {
   $form['ejabberd_php_cli'] = array(
     '#type' => 'textfield',
     '#title' => 'PHP path',
@@ -57,36 +70,41 @@ function ejabberd_auth_admin_settings() {
     '#options' => array(
       0 => 'Simple',
       1 => 'Autonomous',
-      ),
+    ),
     '#default_value' => variable_get('ejabberd_auth_type', 0),
     '#description' => t('A simple script linked to drupal installation or an autonomous script?'),
-    );
+  );
   return system_settings_form($form);
 }
 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function ejabberd_auth_admin_settings_validate($form, &$form_state) {
   $clean = TRUE;
-  if(! is_numeric($form_state['values']['ejabberd_auth_timeout'])) {
+  if (! is_numeric($form_state['values']['ejabberd_auth_timeout'])) {
     form_set_error('ejabberd_auth_timeout', t("Please, I'd like a number"));
     $clean = FALSE;
   }
   $path = $form_state['values']['ejabberd_auth_path'];
-  if(! is_writable(dirname($path))) {
+  if (! is_writable(dirname($path))) {
     form_set_error('ejabberd_auth_path', t("Path not writable"));
     $clean = FALSE;
   }
-  if($clean) {
+  if ($clean) {
     $f = fopen($path, 'w');
     fwrite($f, "#!" . $form_state['values']['ejabberd_php_cli'] . "\n");
-    $inc = dirname(__FILE__) .'/drupalAuth.inc';
-    if(1 == $form_state['values']['ejabberd_auth_type']) {
+    $inc = dirname(__FILE__) . '/drupalAuth.inc';
+    if (1 == $form_state['values']['ejabberd_auth_type']) {
       fwrite($f, file_get_contents($inc));
-    } else {
+    }
+    else {
       fwrite($f, '<' . "?php\ninclude_once '$inc';\n");
     }
     $timeout = $form_state['values']['ejabberd_auth_timeout'];
     $salt = str_replace("'", "\'", $form_state['values']['ejabberd_auth_salt']);
-    $db = (object)parse_url($GLOBALS['db_url']);
+    $db = (object) parse_url($GLOBALS['db_url']);
     fwrite($f, <<<EOD
 error_reporting(0);
 
@@ -96,9 +114,9 @@ error_reporting(0);
 \$auth->play(); // We simply start process !
 
 EOD
-      );
+);
     fclose($f);
     chmod($path, 0755);
-    drupal_set_message('The script is available at '. $form_state['values']['ejabberd_auth_path']);
+    drupal_set_message('The script is available at ' . $form_state['values']['ejabberd_auth_path']);
   }
 }

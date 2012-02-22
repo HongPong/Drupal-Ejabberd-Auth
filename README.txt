@@ -1,3 +1,12 @@
+***** ejabberd_auth *****
+
+Drupal 7.x version - experimental development by HongPong.
+
+ejabberd_auth provides authorization between ejabberd XMPP chat server 
+daemon and Drupal 7.
+
+Based on Drupal 6.x ejabberd_auth by Mathieu - http://drupal.org/user/378820
+
 -- SUMMARY --
 
 Drupal module to use drupal database for ejabberd authentification

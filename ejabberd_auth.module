@@ -1,4 +1,10 @@
 <?php
+/**
+ * @file implements hook_permission(), ejabberd_auth_menu, JabberAuth, ejabberd_auth_admin_settings 
+ * System variables: ejabberd_php_cli, ejabberd_auth_path, ejabberd_auth_salt, ejabberd_auth_timeout
+ *   ejabberd_auth_type
+ * Uses JabberAuth class to create auth script to authenticate with Jabber server.
+ */
 
 //[FIXME] creation du script d'auth sans forcement passer par la page d'admin
 
@@ -16,12 +22,13 @@ function ejabberd_auth_permission() {
 }
 
 /**
+ * Menu item for ejabberd_auth for site administrators
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_menu() {
   $items['admin/config/ejabberd_auth'] = array(
-    'description' => 'Ejabberd auth with drupal users',
+    'description' => 'Ejabberd auth with Drupal users',
     'title' => 'Ejabberd authentification',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ejabberd_auth_admin_settings'),
@@ -32,6 +39,7 @@ function ejabberd_auth_menu() {
 }
 
 /**
+ * Admin Settings for ejabberd, auth script, auth salt, timeout, auth_type,  
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
@@ -72,12 +80,15 @@ function ejabberd_auth_admin_settings($form, &$form_state) {
       1 => 'Autonomous',
     ),
     '#default_value' => variable_get('ejabberd_auth_type', 0),
-    '#description' => t('A simple script linked to drupal installation or an autonomous script?'),
+    '#description' => t('A simple script linked to Drupal installation or an autonomous script?'),
   );
   return system_settings_form($form);
 }
 
 /**
+ * ejabberd_auth_admin_settings_validate() creates auth script for jabberd connection
+ * Uses JabberAuth to create authentication connection setup auth script path to ejabber daemon
+ * Writes a file with ejabberd_php_cli, ejabberd_auth_type, ejabberd_auth_timeout, ejabberd_auth_salt 
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
@@ -89,9 +100,10 @@ function ejabberd_auth_admin_settings_validate($form, &$form_state) {
   }
   $path = $form_state['values']['ejabberd_auth_path'];
   if (! is_writable(dirname($path))) {
-    form_set_error('ejabberd_auth_path', t("Path not writable"));
+    form_set_error('ejabberd_auth_path', t("Auth script path not writable"));
     $clean = FALSE;
   }
+  //auth_path & auth_timeout ok
   if ($clean) {
     $f = fopen($path, 'w');
     fwrite($f, "#!" . $form_state['values']['ejabberd_php_cli'] . "\n");
@@ -105,6 +117,8 @@ function ejabberd_auth_admin_settings_validate($form, &$form_state) {
     $timeout = $form_state['values']['ejabberd_auth_timeout'];
     $salt = str_replace("'", "\'", $form_state['values']['ejabberd_auth_salt']);
     $db = (object) parse_url($GLOBALS['db_url']);
+    //JabberAuth created by drupalAuth.inc class description
+    //write in file about the database, salt & timeout properties
     fwrite($f, <<<EOD
 error_reporting(0);
 

@@ -1,4 +1,10 @@
 <?php
+/* @file Drupal implementation of class JabberAuth for XMPP login 
+ * Drupal 7.x experiment version by Dan Feidt (hongpong)
+ * Functions: __construct, stop, openstd, readstdin, closestd, out, myalive, play,
+ * command, checkpass, checkuser, splitcomm, mysql, logg, 
+ * ejabberd_auth_hash($login)
+ */
 
 /*
 
@@ -142,7 +148,7 @@ class JabberAuth {
         $this->logg("Command was : " . $data[0]);
       }
       switch ($data[0]) {
-        case "isuser": // this is the "isuser" command, used to check for user existance
+        case "isuser": // this is the "isuser" command, used to check for user existence
           $this->jabber_user = $data[1];
           $parms = $data[1]; // only for logging purpose
           $return = $this->checkuser();
@@ -249,6 +255,7 @@ class JabberAuth {
 }
 
 /**
+ * ejabberd_auth_hash($login) 
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */

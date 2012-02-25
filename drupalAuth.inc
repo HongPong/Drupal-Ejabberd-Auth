@@ -260,7 +260,7 @@ class JabberAuth {
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_hash($login) {
-  $salt = variable_get('ejabberd_auth_salt', None);
+  $salt = variable_get('ejabberd_auth_salt', 'None'); // changed this to string 'None' ~hongpong
   $timestamp = REQUEST_TIME;
   $token = hash('sha256', $login . $timestamp . $salt);
   $signature = array('volatil', $login, $timestamp, $token);

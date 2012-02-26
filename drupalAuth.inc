@@ -314,7 +314,7 @@ class JabberAuth {
 
   function logg($message) {
     $debug2 = (bool)variable_get('ejabberd_debug', '');
-    $log_to_status = (bool)variable_get('ejabberd_log_to_status'), '');
+    $log_to_status = (bool)variable_get('ejabberd_log_to_status', '');
     try {
       if ($this->logging) {
         $f = fopen('/tmp/drupal.log', 'a+');

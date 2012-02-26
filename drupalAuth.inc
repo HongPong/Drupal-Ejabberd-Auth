@@ -59,6 +59,8 @@ class JabberAuth {
   var $stdout; /* stdout file pointer */
 
   function __construct($url) {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     $db = (object) parse_url($url);
     $this->dbhost = $db->host;
     $this->dbuser = $db->user;
@@ -77,6 +79,7 @@ class JabberAuth {
   }
 
   function stop() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
     $this->logg("Shutting down ..."); // Sorry, have to go ...
     closelog();
     $this->closestd(); // Simply close files
@@ -84,11 +87,14 @@ class JabberAuth {
   }
 
   function openstd() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
     $this->stdout = @fopen("php://stdout", "w"); // We open STDOUT so we can read
     $this->stdin  = @fopen("php://stdin", "r"); // and STDIN so we can talk !
   }
 
   function readstdin() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     $l      = @fgets($this->stdin, 3); // We take the length of string
     $length = @unpack("n", $l); // ejabberd give us something to play with ...
     $len    = $length["1"]; // and we now know how long to read.
@@ -102,11 +108,15 @@ class JabberAuth {
   }
 
   function closestd() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     @fclose($this->stdin); // We close everything ...
     @fclose($this->stdout);
   }
 
   function out($message) {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     @fwrite($this->stdout, $message); // We reply ...
     $dump = @unpack("nn", $message);
     $dump = $dump["n"];
@@ -114,7 +124,10 @@ class JabberAuth {
   }
 
   function myalive() {
-    if (!is_resource($this->mysock) || !@mysql_ping($this->mysock)) { // check if we have a MySQL connection and if it's valid.
+    $debug = (bool)variable_get('ejabberd_debug', '');
+    
+    // check if we have a MySQL connection and if it's valid.
+    if (!is_resource($this->mysock) || !@mysql_ping($this->mysock)) { 
       $this->mysql(); // We try to reconnect if MySQL gone away ...
       return @mysql_ping($this->mysock); // we simply try again, to be sure ...
     }
@@ -124,6 +137,8 @@ class JabberAuth {
   }
 
   function play() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     do {
       $this->readstdin(); // get data
       $length = strlen($this->data); // compute data length
@@ -139,6 +154,8 @@ class JabberAuth {
   }
 
   function command() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     $data = $this->splitcomm(); // This is an array, where each node is part of what SM sent to us :
     // 0 => the command,
     // and the others are arguments .. e.g. : user, server, password ...
@@ -184,13 +201,16 @@ class JabberAuth {
     }
   }
 
-  function checkpass() {
-    /*
+    /* checkpass()
      * Put here your code to check password
      * $this->jabber_user
      * $this->jabber_pass
      * $this->jabber_server
      */
+  function checkpass() {
+    
+    $debug = (bool)variable_get('ejabberd_debug', '');
+
     $this->jabber_user = mysql_real_escape_string(str_replace("_", " ", $this->jabber_user));
     $this->logg('#' . substr($this->jabber_pass, 0, 8) . '#');
     if (substr($this->jabber_pass, 0, 8) == 'volatil|') { //oneshot magical password
@@ -217,13 +237,16 @@ class JabberAuth {
     }
   }
 
-  function checkuser() {
-    /*
+    /** checkuser()
      * Put here your code to check user
      * $this->jabber_user
      * $this->jabber_pass
      * $this->jabber_server
+     * @return mysql_fetch_assoc($res);
      */
+  function checkuser() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+    
     $this->logg('User: ' . $this->jabber_user);
     $this->jabber_user = mysql_real_escape_string(str_replace("_", " ", $this->jabber_user));
     $this->logg($this->jabber_user);
@@ -237,6 +260,8 @@ class JabberAuth {
   }
 
   function mysql() {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+    
     $this->logg("Mysql: $this->dbhost $this->dbuser $this->dbpass $this->dbbase");
     $this->mysock = @mysql_pconnect($this->dbhost, $this->dbuser, $this->dbpass);
     @mysql_select_db($this->dbbase, $this->mysock);
@@ -244,6 +269,8 @@ class JabberAuth {
   }
 
   function logg($message) {
+    $debug = (bool)variable_get('ejabberd_debug', '');
+    
     if ($this->logging) {
       $f = fopen('/tmp/drupal.log', 'a+');
       fwrite($f, $message);
@@ -251,6 +278,7 @@ class JabberAuth {
       fclose($f);
       @syslog(LOG_INFO, $message);
     }
+    
   }
 }
 
@@ -260,6 +288,9 @@ class JabberAuth {
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_hash($login) {
+  if ($debug) {  
+        drupal_set_message('hook view strophe-xmpp-status block ');
+      }
   $salt = variable_get('ejabberd_auth_salt', 'None'); // changed this to string 'None' ~hongpong
   $timestamp = REQUEST_TIME;
   $token = hash('sha256', $login . $timestamp . $salt);

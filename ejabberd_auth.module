@@ -4,6 +4,9 @@
  * System variables: ejabberd_php_cli, ejabberd_auth_path, ejabberd_auth_salt, ejabberd_auth_timeout
  *   ejabberd_auth_type
  * Uses JabberAuth class to create auth script to authenticate with Jabber server.
+ * system variable
+ * ejabberd_log_to_status 
+ * 
  */
 
 //[FIXME] creation du script d'auth sans forcement passer par la page d'admin
@@ -48,39 +51,52 @@ function ejabberd_auth_admin_settings($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => 'PHP path',
     '#default_value' => variable_get('ejabberd_php_cli', '/usr/bin/php'),
-    '#description' => t("Where is the php cli?"),
+    '#description' => t("Where is the php cli? (ejabberd_php_cli)"),
   );
 
   $form['ejabberd_auth_path'] = array(
     '#type' => 'textfield',
     '#title' => 'Script path',
     '#default_value' => variable_get('ejabberd_auth_path', '/tmp/ejabberd_auth.phps'),
-    '#description' => t("Where the auth script is generated"),
+    '#description' => t("Where the auth script is generated - needs to be server writable (ejabberd_auth_path)"),
   );
 
   $form['ejabberd_auth_salt'] = array(
     '#type' => 'textfield',
     '#title' => 'Salt',
     '#default_value' => variable_get('ejabberd_auth_salt', 'Casimir'),
-    '#description' => t("The secret word, don't keep the default one"),
+    '#description' => t("The secret word, don't keep the default one (ejabberd_auth_salt)"),
   );
 
   $form['ejabberd_auth_timeout'] = array(
     '#type' => 'textfield',
-    '#title' => 'Timeout',
+    '#title' => 'Timeout (ejabberd_auth_timeout)',
     '#default_value' => variable_get('ejabberd_auth_timeout', '180'),
-    '#description' => t("Timeout"),
+    '#description' => t("Timeout in seconds"),
   );
 
   $form['ejabberd_auth_type'] = array(
     '#type' => 'select',
-    '#title' => 'Script type',
+    '#title' => 'Script type (ejabberd_auth_type)',
     '#options' => array(
       0 => 'Simple',
       1 => 'Autonomous',
     ),
     '#default_value' => variable_get('ejabberd_auth_type', 0),
-    '#description' => t('A simple script linked to Drupal installation or an autonomous script?'),
+    '#description' => t('ejabberd_auth_type: A simple script linked to Drupal installation (0)
+    or an autonomous script (1)?'),
+  );
+  $form['ejabberd_debug'] = array(
+    '#type' => 'textfield',
+    '#title' => 'ejabberd debug',
+    '#default_value' => variable_get('ejabberd_debug', '0'),
+    '#description' => t("ejabberd_debug settings: 1 = debug messages, 0 = off. many status updates for vars & events"),
+  );
+  $form['ejabberd_log_to_status'] = array(
+    '#type' => 'textfield',
+    '#title' => 'ejabberd log to status',
+    '#default_value' => variable_get('ejabberd_log_to_status', '0'),
+    '#description' => t("ejabberd transaction log to status messages debug: 1 = messages, 0 = off."),
   );
   return system_settings_form($form);
 }
@@ -88,11 +104,14 @@ function ejabberd_auth_admin_settings($form, &$form_state) {
 /**
  * ejabberd_auth_admin_settings_validate() creates auth script for jabberd connection
  * Uses JabberAuth to create authentication connection setup auth script path to ejabber daemon
- * Writes a file with ejabberd_php_cli, ejabberd_auth_type, ejabberd_auth_timeout, ejabberd_auth_salt 
+ * Writes a file with ejabberd_php_cli, ejabberd_auth_type, ejabberd_auth_timeout, 
+ * ejabberd_auth_salt 
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_admin_settings_validate($form, &$form_state) {
+  $debug = (bool)variable_get('ejabberd_debug', '');
+  if ($debug) {drupal_set_message('ejabberd_auth_admin_settings_validate making a auth file');}
   $clean = TRUE;
   if (! is_numeric($form_state['values']['ejabberd_auth_timeout'])) {
     form_set_error('ejabberd_auth_timeout', t("Please, I'd like a number"));
@@ -104,6 +123,7 @@ function ejabberd_auth_admin_settings_validate($form, &$form_state) {
     $clean = FALSE;
   }
   //auth_path & auth_timeout ok
+  // Write the config file
   if ($clean) {
     $f = fopen($path, 'w');
     fwrite($f, "#!" . $form_state['values']['ejabberd_php_cli'] . "\n");
@@ -131,6 +151,8 @@ EOD
 );
     fclose($f);
     chmod($path, 0755);
-    drupal_set_message('The script is available at ' . $form_state['values']['ejabberd_auth_path']);
+    //reports where the ejabberd auth script 
+    drupal_set_message('The ejabberd auth script is available at ' . 
+      $form_state['values']['ejabberd_auth_path'] . ' <br />This may need to be set now in ejabberd.cfg .');
   }
 }

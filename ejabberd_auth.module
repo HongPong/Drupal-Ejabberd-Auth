@@ -32,13 +32,13 @@ function ejabberd_auth_permission() {
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_menu() {
-  $items['admin/config/ejabberd_auth'] = array(
+  $items['admin/config/ejabberd_auth/settings'] = array(
     'description' => 'Ejabberd auth with Drupal users',
     'title' => 'Ejabberd authentification',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ejabberd_auth_admin_settings'),
     'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
+    /*'type' => MENU_NORMAL_ITEM,*/
   );
   return $items;
 }

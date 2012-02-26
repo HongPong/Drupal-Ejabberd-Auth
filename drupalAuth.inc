@@ -38,14 +38,17 @@ class JabberAuth {
   var $dbbase; /* MySQL database where users are stored */
   var $hash = 'sha256';
 
-  var $debug    = true; /* Debug mode */
-  var $debugfile  = "/tmp/ejabberd-debug.log"; /* Debug output */
-  var $logging  = true; /* Do we log requests ? */
-  var $logfile  = "/tmp/ejabberd-log.log"; /* Log file ... */
   /*
    * For both debug and logging, ejabberd have to be able to write.
    */
-
+  var $debug    = TRUE; /* Debug mode */
+  var $debugfile  = "/tmp/ejabberd-debug.log"; /* Debug output */
+  var $logging  = TRUE; /* Do we log requests ? */
+  var $logfile  = "/tmp/ejabberd-log.log"; /* Log file ... */
+  
+  /*
+   * Jabber server & user variables
+   */
   var $jabber_user; /* This is the jabber user passed to the script. filled by $this->command() */
   var $jabber_pass; /* This is the jabber user password passed to the script. filled by $this->command() */
   var $jabber_server; /* This is the jabber server passed to the script. filled by $this->command(). Useful for VirtualHosts */
@@ -59,7 +62,7 @@ class JabberAuth {
   var $stdout; /* stdout file pointer */
 
   function __construct($url) {
-    $debug = (bool)variable_get('ejabberd_debug', '');
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
 
     $db = (object) parse_url($url);
     $this->dbhost = $db->host;
@@ -75,25 +78,33 @@ class JabberAuth {
       @ini_set("error_log", $this->debugfile);
     }
     $this->logg("Starting pipe-auth ..."); // We notice that it's starting ...
+    if ($debug2) {
+      drupal_set_message(t(filter_xss("Starting ejabberd construct JabberAuth pipe-auth")));
+    }
     $this->openstd();
   }
 
   function stop() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+    if ($debug2) {
+      drupal_set_message(t(filter_xss("Jabberauth.Stop: Shutting down exit(0)")));
+    }
     $this->logg("Shutting down ..."); // Sorry, have to go ...
     closelog();
     $this->closestd(); // Simply close files
     exit(0); // and exit cleanly
   }
 
+// We open STDOUT so we can read
+// and STDIN so we can talk !
   function openstd() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
     $this->stdout = @fopen("php://stdout", "w"); // We open STDOUT so we can read
     $this->stdin  = @fopen("php://stdin", "r"); // and STDIN so we can talk !
   }
 
   function readstdin() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
 
     $l      = @fgets($this->stdin, 3); // We take the length of string
     $length = @unpack("n", $l); // ejabberd give us something to play with ...
@@ -108,24 +119,29 @@ class JabberAuth {
   }
 
   function closestd() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
 
     @fclose($this->stdin); // We close everything ...
     @fclose($this->stdout);
   }
 
   function out($message) {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+    if ($debug2) {
+      drupal_set_message(t(filter_xss("JabberAuth Out was: " . $message)));
+    }
     @fwrite($this->stdout, $message); // We reply ...
     $dump = @unpack("nn", $message);
     $dump = $dump["n"];
     $this->logg("OUT: " . $dump);
   }
 
+// check if we have a MySQL connection and if it's valid.
   function myalive() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-    
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+    if ($debug2) {
+      drupal_set_message(t('Jabberauth.myalive mysql checking'));
+    }    
     // check if we have a MySQL connection and if it's valid.
     if (!is_resource($this->mysock) || !@mysql_ping($this->mysock)) { 
       $this->mysql(); // We try to reconnect if MySQL gone away ...
@@ -137,8 +153,10 @@ class JabberAuth {
   }
 
   function play() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+    if ($debug2) {
+      drupal_set_message(t('Jabberauth.play'));
+    }
     do {
       $this->readstdin(); // get data
       $length = strlen($this->data); // compute data length
@@ -154,8 +172,10 @@ class JabberAuth {
   }
 
   function command() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+    if ($debug2) {
+      drupal_set_message(t('Jabberauth.command'));
+    }
     $data = $this->splitcomm(); // This is an array, where each node is part of what SM sent to us :
     // 0 => the command,
     // and the others are arguments .. e.g. : user, server, password ...
@@ -163,26 +183,41 @@ class JabberAuth {
     if ($this->myalive()) { // Check we can play with MySQL
       if (strlen($data[0]) > 0 ) {
         $this->logg("Command was : " . $data[0]);
+            if ($debug2) {
+      drupal_set_message(t(filter_xss("Command was : " . $data[0])));
+    }
       }
       switch ($data[0]) {
-        case "isuser": // this is the "isuser" command, used to check for user existence
+  // this is the "isuser" command, used to check for user existence
+        case "isuser":
+          if ($debug2) {
+            drupal_set_message(t('Jabberauth.isuser'));
+          }
           $this->jabber_user = $data[1];
           $parms = $data[1]; // only for logging purpose
           $return = $this->checkuser();
           break;
 
-        case "auth": // check login, password
+ // check login, password
+        case "auth":
+          if ($debug2) {
+            drupal_set_message(t('Jabberauth.auth'));
+          }
           $this->jabber_user = $data[1];
           $this->jabber_pass = $data[3];
           $parms = $data[1] . ":" . $data[2] . ":" . md5($data[3]); // only for logging purpose
           $return = $this->checkpass();
           break;
 
+// We do not want jabber to be able to change password
         case "setpass":
-          $return = false; // We do not want jabber to be able to change password
+          $return = false; 
           break;
 
         default:
+          if ($debug2) {
+            drupal_set_message(t('Jabberauth.command.default - stopping'));
+          }
           $this->stop(); // if it's not something known, we have to leave.
           // never had a problem with this using ejabberd, but might lead to problem ?
           break;
@@ -193,6 +228,9 @@ class JabberAuth {
       if (strlen($data[0]) > 0 && strlen($parms) > 0) {
         $this->logg("Command : " . $data[0] . ":" . $parms . " ==> " . $return . " ");
       }
+      if ($debug2) {
+      drupal_set_message(t(filter_xss("Command : " . $data[0] . ":" . $parms . " ==> " . $return . " ")));
+    }
       return @pack("nn", 2, $return);
     }
     else {
@@ -201,15 +239,15 @@ class JabberAuth {
     }
   }
 
-    /* checkpass()
+    /**
+     * checkpass()
      * Put here your code to check password
      * $this->jabber_user
      * $this->jabber_pass
      * $this->jabber_server
      */
   function checkpass() {
-    
-    $debug = (bool)variable_get('ejabberd_debug', '');
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
 
     $this->jabber_user = mysql_real_escape_string(str_replace("_", " ", $this->jabber_user));
     $this->logg('#' . substr($this->jabber_pass, 0, 8) . '#');
@@ -237,7 +275,8 @@ class JabberAuth {
     }
   }
 
-    /** checkuser()
+    /** 
+     * checkuser()
      * Put here your code to check user
      * $this->jabber_user
      * $this->jabber_pass
@@ -245,8 +284,8 @@ class JabberAuth {
      * @return mysql_fetch_assoc($res);
      */
   function checkuser() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-    
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+
     $this->logg('User: ' . $this->jabber_user);
     $this->jabber_user = mysql_real_escape_string(str_replace("_", " ", $this->jabber_user));
     $this->logg($this->jabber_user);
@@ -260,36 +299,51 @@ class JabberAuth {
   }
 
   function mysql() {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-    
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+
     $this->logg("Mysql: $this->dbhost $this->dbuser $this->dbpass $this->dbbase");
     $this->mysock = @mysql_pconnect($this->dbhost, $this->dbuser, $this->dbpass);
     @mysql_select_db($this->dbbase, $this->mysock);
     $this->logg("MySQL :: " . (is_resource($this->mysock) ? "Connecte" : "Deconnecte"));
   }
 
+  /**
+   * logg($message) 
+   * will log to status smessages if ejabberd_log_to_status && debug2
+   */
+
   function logg($message) {
-    $debug = (bool)variable_get('ejabberd_debug', '');
-    
-    if ($this->logging) {
-      $f = fopen('/tmp/drupal.log', 'a+');
-      fwrite($f, $message);
-      fwrite($f, "\n");
-      fclose($f);
-      @syslog(LOG_INFO, $message);
+    $debug2 = (bool)variable_get('ejabberd_debug', '');
+    $log_to_status = (bool)variable_get('ejabberd_log_to_status'), '');
+    try {
+      if ($this->logging) {
+        $f = fopen('/tmp/drupal.log', 'a+');
+        fwrite($f, $message);
+        fwrite($f, "\n");
+        fclose($f);
+        @syslog(LOG_INFO, $message);
+      }
+    catch (Exception $e) {  
+      echo "Caught exception on logging JabberAuth: " . get_class($e) . "\n";
+      echo "Message: " . $e->getMessage() . "\n";
+     //echo "Error: " . $exception->getResponse()->getRawBody();  
+    }
+    if ($log_to_status && $debug2) {
+      drupal_set_message(t(filter_xss("JabberAuth Log : " . $message)));
     }
     
   }
 }
 
 /**
- * ejabberd_auth_hash($login) 
+ * ejabberd_auth_hash($login)
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_hash($login) {
-  if ($debug) {  
-        drupal_set_message('hook view strophe-xmpp-status block ');
+  $debug2 = (bool)variable_get('ejabberd_debug', '');
+  if ($debug2) {
+        drupal_set_message(t('hook view strophe-xmpp-status block '));
       }
   $salt = variable_get('ejabberd_auth_salt', 'None'); // changed this to string 'None' ~hongpong
   $timestamp = REQUEST_TIME;

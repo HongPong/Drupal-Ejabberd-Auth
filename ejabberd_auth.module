@@ -1,6 +1,8 @@
 <?php
 /**
- * @file implements hook_permission(), ejabberd_auth_menu, JabberAuth, ejabberd_auth_admin_settings 
+ * @file for hook_permission(), ejabberd_auth_menu, JabberAuth, ejabberd_auth_admin_settings
+ *
+ * Implements hook_permission(), ejabberd_auth_menu, ejabberd_auth_admin_settings
  * System variables: ejabberd_php_cli, ejabberd_auth_path, ejabberd_auth_salt, ejabberd_auth_timeout
  *   ejabberd_auth_type
  * Uses JabberAuth class to create auth script to authenticate with Jabber server.
@@ -19,7 +21,7 @@ function ejabberd_auth_permission() {
   return array(
     'ejabberd_auth' => array(
       'title' => t('ejabberd_auth'),
-      'description' => t('TODO Add a description for \'ejabberd_auth\''),
+      'description' => t('Administer ejabber settings ejabberd_auth'),
     ),
   );
 }
@@ -42,7 +44,7 @@ function ejabberd_auth_menu() {
 }
 
 /**
- * Admin Settings for ejabberd, auth script, auth salt, timeout, auth_type,  
+ * Admin Settings for ejabberd, auth script, auth salt, timeout, auth_type,
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
  */
@@ -88,7 +90,7 @@ function ejabberd_auth_admin_settings($form, &$form_state) {
   );
   $form['ejabberd_debug'] = array(
     '#type' => 'textfield',
-    '#title' => 'ejabberd debug',
+    '#title' => 'ejabberd debug2',
     '#default_value' => variable_get('ejabberd_debug', '0'),
     '#description' => t("ejabberd_debug settings: 1 = debug messages, 0 = off. many status updates for vars & events"),
   );
@@ -104,7 +106,7 @@ function ejabberd_auth_admin_settings($form, &$form_state) {
 /**
  * ejabberd_auth_admin_settings_validate() creates auth script for jabberd connection
  * Uses JabberAuth to create authentication connection setup auth script path to ejabber daemon
- * Writes a file with ejabberd_php_cli, ejabberd_auth_type, ejabberd_auth_timeout, 
+ * Writes a file with ejabberd_php_cli, ejabberd_auth_type, ejabberd_auth_timeout,
  * ejabberd_auth_salt 
  * @todo Please document this function.
  * @see http://drupal.org/node/1354
@@ -153,6 +155,6 @@ EOD
     chmod($path, 0755);
     //reports where the ejabberd auth script 
     drupal_set_message('The ejabberd auth script is available at ' . 
-      $form_state['values']['ejabberd_auth_path'] . ' <br />This may need to be set now in ejabberd.cfg .');
+      t(filter_xss($form_state['values']['ejabberd_auth_path'])) . ' <br />This may need to be set now in ejabberd.cfg .');
   }
 }

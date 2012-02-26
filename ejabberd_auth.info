@@ -1,6 +1,8 @@
-name = Ejabberd authentification
-description = Use drupal users with ejabberd
+name = Ejabberd Authentification
+description = Use Drupal users with ejabberd
 core = 7.x
 package = XMPP
-version = 0.1
+version = 7.x-1.x-dev
 files[] = drupalAuth.inc
+files[] = ejabberd_auth.module
+configure = /admin/config/ejabberd_auth

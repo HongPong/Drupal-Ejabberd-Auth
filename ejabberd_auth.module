@@ -32,6 +32,16 @@ function ejabberd_auth_permission() {
  * @see http://drupal.org/node/1354
  */
 function ejabberd_auth_menu() {
+  $items['admin/config/ejabberd_auth'] = array(
+    'title' => t('Ejabberd XMPP settings'),
+    'description' => t('Configure Ejabberd XMPP chat settings'),
+    'position' => 'left',
+    'weight' => -20,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
   $items['admin/config/ejabberd_auth/settings'] = array(
     'description' => 'Ejabberd auth with Drupal users',
     'title' => 'Ejabberd authentification',

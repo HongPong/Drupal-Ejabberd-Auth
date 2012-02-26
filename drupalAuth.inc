@@ -323,6 +323,7 @@ class JabberAuth {
         fclose($f);
         @syslog(LOG_INFO, $message);
       }
+    }
     catch (Exception $e) {  
       echo "Caught exception on logging JabberAuth: " . get_class($e) . "\n";
       echo "Message: " . $e->getMessage() . "\n";
